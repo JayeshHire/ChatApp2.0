@@ -1,9 +1,6 @@
 from db_utils import db_data_types as db
 
-a = db.BooleanDataTypeMeta()
+a = db.Boolean()
 
-print(a.sql_type)
+print(a())
 
-class
-
-class testCls()

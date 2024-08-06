@@ -1,7 +1,9 @@
+
+#meta class for group of data types
 class DbDataTypeMeta(type):
     def __new__(cls, name, bases, namespace):
         predefined_names = ['Boolean',
-                            'Char',
+                            'CharSeqType',
                             'NumericTypes',
                             'Temporal',
                             'UUID',
@@ -22,13 +24,14 @@ class DbDataTypeMeta(type):
                 if bases[0] is not DataType:
                     raise ValueError(f"All the data db_types should be extension of the DataType class")
 
+        #this function makes the instance of the main class callable
         def callable_func(obj, db_type):
-            if db_type.toLowerCase() not in obj.db_types:
+            if db_type.lower() not in obj.db_types:
                 raise ValueError(f"db_type should be one of the below db_types :\
                 \n{obj.db_types}")
 
             for key, value in obj.db_types.items():
-                if db_type.toLowerCase() is key:
+                if db_type.lower() is key:
                     return value
 
         namespace['__call__'] = callable_func
@@ -36,8 +39,63 @@ class DbDataTypeMeta(type):
         return cls_obj
 
 
+#meta class for the actual data type
+class SqlDataTypeMeta(type):
+        class_names = ('Char',
+                       'Varchar',
+                       'Numeric',
+                       'Text',
+                       'Integer',
+                       'SmallInt',
+                       'BigInt',
+                       'Serial',
+                       'Float',
+                       'Date',
+                       'Time',
+                       'TimeStamp',
+                       'TimeStampTZ',
+                       'Interval',
+                       'UUID',
+                       'JSON',
+                       'JSONB',
+                       'HStore',
+                       'Geometric',
+                       'CIDR',
+                       'INET',
+                       'MacAddr',
+                       'Boolean',
+                       'UUID'
+                       )
 
- class DataTypeMeta(type):
+        def __new__(cls, name, bases, namespace):
+            if name not in cls.class_names:
+                raise ValueError(f"name of the class cannot \
+                be other than these names:\n \
+                                 {cls.class_names}")
+
+            def callable_func(obj, **kwargs):
+                # return_dict = {'Char': f"char({kwargs['n']})",
+                #                'Varchar': f"varchar({kwargs['n']})",
+                #                'Text': f"text",
+                #
+                #                }
+                if name in cls.class_names[0:2]:
+                    return f"{name.lower()}({kwargs['n']})"
+                elif name is cls.class_names[2]:
+                    return f"{name.lower()}({kwargs['d']}, {kwargs['p']})"
+                elif name in cls.class_names[3:len(cls.class_names)]:
+                    return f"{name}"
+
+            namespace['__call__'] = callable_func
+            return super().__new__(cls, name, bases, namespace)
+
+
+# meta class for classes which are themselves actual data type class
+# and group data type class as well
+class GroupedActualDataTypeMeta(DbDataTypeMeta, SqlDataTypeMeta):
+    pass
+
+class DataTypeMeta(type):
      class_obj = {}
      # def __new__(cls, name, bases, namespace):
 
@@ -47,7 +105,8 @@ class DataType:
     pass
 
 
-class Boolean(DataType, metaclass=DbDataTypeMeta):
+# this is an grouped as well as actual data type class
+class Boolean(DataType, metaclass=GroupedActualDataTypeMeta):
     """
     usage:
         create an instance of boolean
@@ -81,18 +140,21 @@ class CharSeqType(DataType, metaclass=DbDataTypeMeta):
         char_inst(n)
         >> 'char(n)'
     """
+    
+    class Char(metaclass=SqlDataTypeMeta):
+        # def __call__(self, n):
+        #     return f"char({n})"
+        pass
 
-    class Char:
-        def __call__(self, n):
-            return f"char({n})"
+    class Varchar(metaclass=SqlDataTypeMeta):
+        # def __call__(self, n):
+        #     return f"varchar({n})"
+        pass
 
-    class Varchar:
-        def __call__(self, n):
-            return f"varchar({n})"
-
-    class Text:
-        def __call__(self, n):
-            return f"text"
+    class Text(metaclass=SqlDataTypeMeta):
+        # def __call__(self):
+        #     return f"text"
+        pass
 
     # def __call__(self, db_type):
     #
@@ -101,7 +163,7 @@ class CharSeqType(DataType, metaclass=DbDataTypeMeta):
     #         \n{self.db_types}")
     #
     #     for key, value in self.db_types.items():
-    #         if db_type.toLowerCase() is key:
+    #         if db_type.lower() is key:
     #             return value
 
     @property
@@ -158,31 +220,42 @@ class NumericTypes(DataType, metaclass=DbDataTypeMeta):
     numeric(4,3)
     >> 'numeric(4,3)'
     """
-    class Integer:
-        def __call__(self):
-            return f"integer"
+    # class SqlDataTypeMeta(type):
+    #     def __new__(cls, name, bases, namespace):
+    # 
+    #         def callable_func(self, )
 
-    class SmallInt :
-        def __call__(self):
-            return f"smallint"
+    class Integer(metaclass=SqlDataTypeMeta):
+        # def __call__(self):
+        #     return f"integer"
+        pass
 
-    class BigInt:
-        def __call__(self):
-            return f"bigint"
+    class SmallInt(metaclass=SqlDataTypeMeta) :
+        # def __call__(self):
+        #     return f"smallint"
+        pass
 
-    class Serial:
-        def __call__(self):
-            return f"serial"
+    class BigInt(metaclass=SqlDataTypeMeta):
+        # def __call__(self):
+        #     return f"bigint"
+        pass
 
-    class Float:
-        def __call__(self):
-            return f"float"
+    class Serial(metaclass=SqlDataTypeMeta):
+        # def __call__(self):
+        #     return f"serial"
+        pass
 
-    class Numeric:
-        def __call__(self, d, p):
-            # d - digits
-            # p - decimals
-            return f"numeric({d},{p})"
+    class Float(metaclass=SqlDataTypeMeta):
+        # def __call__(self):
+        #     return f"float"
+        pass
+
+    class Numeric(metaclass=SqlDataTypeMeta):
+        # def __call__(self, d, p):
+        #     # d - digits
+        #     # p - decimals
+        #     return f"numeric({d},{p})"
+        pass
 
     # def __call__(self, db_type):
     #     if db_type not in self.db_types:
@@ -190,7 +263,7 @@ class NumericTypes(DataType, metaclass=DbDataTypeMeta):
     #         \n{self.db_types}")
     #
     #     for key, value in self.db_types.items():
-    #         if db_type.toLowerCase() is key:
+    #         if db_type.lower() is key:
     #             return value
 
 
@@ -219,25 +292,30 @@ class Temporal(DataType, metaclass=DbDataTypeMeta):
     #          'interval'
     #          )
 
-    class Date:
-        def __call__(self):
-            return 'date'
+    class Date(metaclass=SqlDataTypeMeta):
+        # def __call__(self):
+        #     return 'date'
+        pass
 
-    class Time:
-        def __call__(self):
-            return 'time'
+    class Time(metaclass=SqlDataTypeMeta):
+        # def __call__(self):
+        #     return 'time'
+        pass
 
-    class TimeStamp :
-        def __call__(self):
-            return 'timestamp'
+    class TimeStamp(metaclass=SqlDataTypeMeta) :
+        # def __call__(self):
+        #     return 'timestamp'
+        pass
 
-    class TimeStampTZ:
-        def __call__(self):
-            return 'timestamptz'
+    class TimeStampTZ(metaclass=SqlDataTypeMeta):
+        # def __call__(self):
+        #     return 'timestamptz'
+        pass
 
-    class Interval:
-        def __call__(self):
-            return "interval "
+    class Interval(metaclass=SqlDataTypeMeta):
+        # def __call__(self):
+        #     return "interval "
+        pass
 
     # def __call__(self, db_type):
     #
@@ -246,7 +324,7 @@ class Temporal(DataType, metaclass=DbDataTypeMeta):
     #         \n{self.db_types}")
     #
     #     for key, value in self.db_types.items():
-    #         if db_type.toLowerCase() is key:
+    #         if db_type.lower() is key:
     #             return value
 
 
@@ -265,10 +343,10 @@ class Temporal(DataType, metaclass=DbDataTypeMeta):
                         "It is immutable")
 
 
-class UUID(DataType, metaclass=DbDataTypeMeta):
+class UUID(DataType, metaclass=GroupedActualDataTypeMeta):
 
-    def __call__(self):
-        return 'uuid'
+    # def __call__(self):
+    #     return 'uuid'
 
     @property
     def db_types(self):
@@ -285,13 +363,15 @@ class JSON(DataType, metaclass=DbDataTypeMeta):
     # _db_types = ('json', 'jsonb')
 
 
-    class JSON:
-        def __call__(self):
-            return 'json'
+    class JSON(metaclass=SqlDataTypeMeta):
+        # def __call__(self):
+        #     return 'json'
+        pass
 
-    class JSONB:
-        def __call__(self):
-            return 'jsonb'
+    class JSONB(metaclass=SqlDataTypeMeta):
+        # def __call__(self):
+        #     return 'jsonb'
+        pass
 
     # def __call__(self, db_type):
     #     if db_type not in self.db_types:
@@ -299,7 +379,7 @@ class JSON(DataType, metaclass=DbDataTypeMeta):
     #         \n{self.db_types}")
     #
     #     for key, value in self.db_types.items():
-    #         if db_type.toLowerCase() is key:
+    #         if db_type.lower() is key:
     #             return value
 
 
@@ -320,13 +400,15 @@ class SpecialDataTypes(DataType, metaclass=DbDataTypeMeta):
     # _db_types = ('hstore','geometric',)
 
 
-    class HStore:
-        def __call__(self):
-            return "hstore"
+    class HStore(metaclass=SqlDataTypeMeta):
+        # def __call__(self):
+        #     return "hstore"
+        pass
 
-    class Geometric:
-        def __call__(self):
-            return "geometric"
+    class Geometric(metaclass=SqlDataTypeMeta):
+        # def __call__(self):
+        #     return "geometric"
+        pass
 
     # def __call__(self, db_type):
     #     if db_type not in self.db_types:
@@ -334,7 +416,7 @@ class SpecialDataTypes(DataType, metaclass=DbDataTypeMeta):
     #         \n{self.db_types}")
     #
     #     for key, value in self.db_types.items():
-    #         if db_type.toLowerCase() is key:
+    #         if db_type.lower() is key:
     #             return value
 
     @property
@@ -355,17 +437,20 @@ class NetworkDataTypes(DataType, metaclass=DbDataTypeMeta):
     # _db_types = ('CIDR', 'INET', 'MACADDR')
 
 
-    class CIDR:
-        def __call__(self):
-            return f"cidr"
+    class CIDR(metaclass=SqlDataTypeMeta):
+        # def __call__(self):
+        #     return f"cidr"
+        pass
 
-    class INET:
-        def __call__(self):
-            return f"inet"
+    class INET(metaclass=SqlDataTypeMeta):
+        # def __call__(self):
+        #     return f"inet"
+        pass
 
-    class MacAddr:
-        def __call__(self):
-            return f"macaddr"
+    class MacAddr(metaclass=SqlDataTypeMeta):
+        # def __call__(self):
+        #     return f"macaddr"
+        pass
 
     # def __call__(self, db_type):
     #     if db_type not in self.db_types:
@@ -373,7 +458,7 @@ class NetworkDataTypes(DataType, metaclass=DbDataTypeMeta):
     #         \n{self.db_types}")
     #
     #     for key, value in self.db_types.items():
-    #         if db_type.toLowerCase() is key:
+    #         if db_type.lower() is key:
     #             return value
 
     @property
@@ -387,5 +472,3 @@ class NetworkDataTypes(DataType, metaclass=DbDataTypeMeta):
     @db_types.setter
     def db_types(self, val):
         raise Exception("'db_types' attribute is immutable")
-
-    pass
